@@ -26,3 +26,7 @@ urlpatterns = [
     path('test/', test)
 ]
 
+# django2.1似乎只需要将404.html和500.html放到templates中即可
+handler404 = page_not_found
+handler500 = page_error
+

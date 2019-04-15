@@ -1,4 +1,4 @@
-from django.shortcuts import render, HttpResponse
+from django.shortcuts import render, HttpResponse, render_to_response
 from search.models import DouBanIndex, CsdnBlogIndex
 from elasticsearch import Elasticsearch
 from datetime import datetime
@@ -205,7 +205,9 @@ def test(request):
     return render(request, 'test.html')
 
 
+def page_not_found(request):
+    return render_to_response('404.html')
 
 
-
-
+def page_error(request):
+    return render_to_response('500.html')
