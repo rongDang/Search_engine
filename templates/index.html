@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <title>小白搜索</title>
+    <link rel="icon" href="{% static 'img/search.ico' %}" type="image/x-icon" />
+    <script src="{% static 'js/jquery-3.2.1.min.js' %}"></script>
+    <script src="{% static 'js/bootstrap.min.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <style>
+        .search-div {
+            padding-right: 15px;
+            padding-left: 15px;
+            margin-right: auto;
+            margin-left: auto
+        }
+
+        @media (min-width: 768px) {
+            .search-div {
+                width: 586px
+            }
+        }
+
+        @media (min-width: 992px) {
+            .search-div {
+                width: 586px
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .search-div {
+                width: 586px
+            }
+        }
+
+        .button-radius{
+            /*设置按钮左边的弧度为0，和input贴合*/
+            border-top-left-radius:0;
+            border-bottom-left-radius:0;
+            /*设置左边框宽度为0，和input贴合*/
+            border-left-width: 0;
+        }
+        p a{
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="padding-top: 5%">
+        <div class="row search-div">
+            <h1 align="center">小白&nbsp;搜</h1>
+            <ul class="nav nav-pills" style="padding-bottom: 3px">
+                <li class="type active" data-type="douban"><a href="#">豆瓣</a></li>
+                <li class="type" data-type="CSDN"><a href="#">CSDN</a></li>
+            </ul>
+            <div class="input-group">
+                <input type="text" class="form-control" maxlength="50" placeholder="Search for..."  id="search">
+                <span class="input-group-btn">
+                    <button class="btn btn-default button-radius" type="button" onclick="search()">立即查找</button>
+                </span>
+                <!--min-width设置占容器宽度的多少，最小屏幕下有问题-->
+                <ul class="dropdown-menu" style="min-width:85.3%;" aria-labelledby="search"></ul>
+            </div>
+            <p style="padding-top: 20px;padding-left: 5%">
+                <strong>搜索历史：</strong>
+            </p>
+        </div>
+    </div>
+</body>
+<script type="text/javascript">
+    var search_url = '{% url 'result' %}';
+
+    //搜索方法
+    function search(){
+        var key = $("input").val();
+        //跳转到结果页面
+        location.href=search_url+"?key="+key+"&type="+$(".type.active").attr("data-type");
+    }
+
+    $(".type").on("click",  function () {
+        $(".type").removeClass("active");
+        $(this).addClass("active");
+        //slideUp 滑动上升
+        $(".dropdown-menu").slideUp();
+    });
+
+    //搜索建议Ajax, 只要当前input中的值发生变化就会触发
+    $("input").on("input propertychange", function () {
+        //alert($(".type.active").attr("data-type"))
+        if ($(this).val() != ""){
+            var results = "";
+            $.get("{% url 'suggest' %}", {key: $(this).val(), "type":$(".type.active").attr("data-type")}, function (msg) {
+                for (var i=0; i<msg.length; i++){
+                    results += '<li><a href="'+search_url+'?key='+msg[i]+'&type='+$(".type.active").attr("data-type")+'">'+msg[i]+'</a></li>'
+                }
+                $(".dropdown-menu").empty();
+                $(".dropdown-menu").append(results);
+                if (msg.length == 0){
+                    $(".dropdown-menu").slideUp();
+                }else {
+                    $(".dropdown-menu").slideDown();
+                }
+
+            });
+        }
+    });
+    //监测input的输入为空时，隐藏下拉菜单
+    $("#search").on("input propertychange", function () {
+        if($("#search").val() == ""){
+            $(".dropdown-menu").slideUp();
+        }
+    });
+
+    //存储搜索历史，对历史记录去重
+    var doubanArr ;
+    var csdnArr;
+    if (localStorage.search_douban){
+        doubanArr = localStorage.search_douban.split(",")
+    }else {
+        doubanArr = []
+    }
+    if(localStorage.search_csdn){
+        csdnArr = localStorage.search_csdn.split(",")
+    }else {
+        csdnArr = []
+    }
+
+    //搜索历史的显示
+    MapSearchArr();
+    function MapSearchArr() {
+        var tmpHtml = "";
+        var doubanLen = 0;
+        var csdnLen = 0;
+        if (doubanArr.length > 3) {
+            doubanLen = 3
+        } else {
+            doubanLen = doubanArr.length
+        }
+        if (csdnArr.length > 3) {
+            csdnLen = 3
+        } else {
+            csdnLen = csdnArr.length
+        }
+        for (var i = 0; i < doubanLen; i++) {
+            tmpHtml += '<a href="/result?key=' + doubanArr[i] + '&type=douban">' + doubanArr[i] + '</a>&nbsp;&nbsp;';
+        }
+        for (var j = 0; j < csdnLen; j++) {
+            tmpHtml += '<a href="/result?key=' + csdnArr[j] + '&type=CSDN">' + csdnArr[j] + '</a>&nbsp;&nbsp;';
+        }
+        $("p").append(tmpHtml);
+    }
+</script>
+</html>

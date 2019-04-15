@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <title>搜索结果</title>
+    <link rel="icon" href="{% static 'img/search.ico' %}" type="image/x-icon" />
+    <script src="{% static 'js/jquery-3.2.1.min.js' %}"></script>
+    <script src="{% static 'js/bootstrap.min.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <script src="{% static 'js/pagination.js' %}"></script>
+    <style>
+        .search-div {
+            padding-right: 15px;
+            padding-left: 15px;
+            margin-right: auto;
+            margin-left: auto
+        }
+
+        @media (min-width: 768px) {
+            .search-div {
+                width: 586px
+            }
+        }
+
+        @media (min-width: 992px) {
+            .search-div {
+                width: 586px
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .search-div {
+                width: 586px
+            }
+        }
+
+        .button-radius{
+            /*设置按钮左边的弧度为0，和input贴合*/
+            border-top-left-radius:0;
+            border-bottom-left-radius:0;
+            /*设置左边框宽度为0，和input贴合*/
+            border-left-width: 0;
+        }
+        .keyword{
+            color: #c00;
+        }
+        .pager li{
+            padding-right: 5px;
+        }
+        .pager li>a{
+            color: black;
+        }
+        .li_style{
+            border: none;
+            /*上 右 下 左*/
+            padding: 0px 0px 5px 0px;
+        }
+        .p_style{
+            padding-top: 5px;
+            padding-left: 20%;
+            font-size: 16px;
+            color: #a7a2ac
+        }
+
+        .ue-clear:after{content: ".";display:block;height:0;clear:both;visibility:hidden;}
+        .ue-clear{display:inline-block;}
+        *html .ue-clear{height:1%;}
+        .ue-clear{display:block;}
+        .resultArea .pagination{margin-bottom:25px;padding-left:32px;}
+        .pagination{font-size:14px;}
+        .pagination a {text-decoration: none;border: solid 1px;	}
+        .pagination .pxofy{float:left;margin-left: 5px;height:25px;*padding-top:1px;}
+        .pagination a, .pagination span {display: block;float: left;height:18px;line-height:18px;padding:0 6px;margin-right: 5px;font-family:Arial, Helvetica, sans-serif !important;}
+        .pagination .current {cursor:default;border: solid 1px ;}
+        .pagination .prev, .pagination .next{*line-height:22px;}
+
+        /*分页样式*/
+        .pagination a{color: #032F54;border-color:#8EB2D2;}
+        .pagination a:hover{color:#023054;border-color:#8EB2D2;background:#B8DFFB;}
+        .pagination .current{color:#fff;border-color:#5c9bc4;background:#41D1B4;}
+        .pagination .current.prev, .pagination .current.next{color:#B9B9B9;border-color:#D3D3D3;background:#fff;}
+        .pagination .pxofy{color: #023054;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row search-div">
+            <h1 align="center"><a href="{% url 'index' %}">小白&nbsp;搜</a></h1>
+            <ul class="nav nav-pills" style="padding-bottom: 3px">
+            {% if search_type == "douban" %}
+                    <li class="type active" data-type="douban"><a href="#">豆瓣</a></li>
+                    <li class="type" data-type="CSDN"><a href="#">CSDN</a></li>
+                {% else %}
+                    <li class="type" data-type="douban"><a href="#">豆瓣</a></li>
+                    <li class="type active" data-type="CSDN"><a href="#">CSDN</a></li>
+                {% endif %}
+            </ul>
+            <div class="input-group">
+                <input type="text" class="form-control" maxlength="50" placeholder="Search for..." value="{{ key_word }}" id="search">
+                <span class="input-group-btn">
+                    <button class="btn btn-default button-radius" type="button" onclick="search()">立即查找</button>
+                </span>
+                <!--min-width设置占容器宽度的多少，最小屏幕下有问题-->
+                <ul class="dropdown-menu" style="min-width:85.3%;" aria-labelledby="search"></ul>
+            </div>
+        </div>
+        <div class="row">
+            <!--数据显示-->
+            <div class="col-md-3 col-sm-3">
+                <div class="panel panel-success">
+                    <div class="panel-heading">已爬取数据统计</div>
+                    <div class="panel-body">
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <span class="badge">{{ douban_count }}</span>
+                                豆瓣电影
+                            </li>
+                            <li class="list-group-item">
+                                <span class="badge">{{ csdn_count }}</span>
+                                CSDN
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <!--查询内容展示-->
+            <div class="col-md-6 col-sm-6">
+                <p class="p_style">找到约&nbsp;{{ total_nums }}&nbsp;个相关结果(耗时{{ elapsed_seconds }}秒)</p>
+                {% if search_type == "douban" %}
+                    {% for foo in hit_list %}
+                        <h3>
+                            <a href="{{ foo.url }}" target="_blank">{{ foo.title | safe }}</a>&nbsp;&nbsp;&nbsp;---&nbsp;&nbsp;&nbsp;
+                            <span style="font-size: 14px;color: #3a3b1c">豆瓣评分：{{ foo.rate }}</span>
+                        </h3>
+                        <span style="font-size: 16px;color: #007722">导演：</span>{{ foo.directors }}<br/>
+                        <span style="font-size: 16px;color: #007722">主演：</span>{{ foo.casts }}<br/>
+                        <span style="font-size: 16px;color: #007722">又名：</span>{{ foo.alias | safe }}<br/>
+                        <span style="font-size: 16px;color: #007722">剧情简介：</span>
+                        <p style="padding-top: 8px">&emsp;&emsp;{{ foo.introduce | safe }}</p>
+                        <div>
+                            <span style="font-weight: bold">网站:
+                                <a href="https://movie.douban.com" style="color: green" target="_blank">豆瓣电影</a>
+                            </span>&nbsp;--&nbsp;
+                            <span style="font-weight: bold">上映时间: {{ foo.date }}</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    {% for foo in hit_list %}
+                        <h3>
+                            <a href="{{ foo.blog_url }}" target="_blank">{{ foo.title | safe }}</a>
+                        </h3>
+                        <p style="padding-top: 8px">&emsp;&emsp;{{ foo.content | safe }}</p>
+                        <div>
+                            <span style="font-weight: bold">用户:
+                                <a href="{{ foo.user_url }}" style="color: green" target="_blank">{{ foo.nick_name | safe }}</a>
+                            </span>&emsp;&emsp;&emsp;&emsp;
+                            <span style="font-weight: bold">发布时间: {{ foo.date }}</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                <!--分页显示，样式到js中改为bootstrap的分页 (未完成)-->
+                <div class="pagination ue-clear"></div>
+            </div>
+            <!--搜索热榜-->
+            <div class="col-md-3 col-sm-3">
+                <div class="panel panel-danger">
+                    <div class="panel-heading">搜索热榜</div>
+                    <div class="panel-body">
+                        <ul class="list-group">
+                            {% for top in top_list %}
+                                <li class="list-group-item li_style">
+                                    <a href="#" onclick="append_to('{{ top }}')">{{ top }}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <!--搜索历史展示-->
+                <div class="panel panel-warning">
+                    <div class="panel-heading">搜索历史</div>
+                    <div class="panel-body">
+                        <ul class="list-group history"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    var search_url = '{% url 'result' %}';
+
+    //点击搜索
+    function search(){
+        location.href=search_url+"?key="+$("input").val()+"&type="+$(".type.active").attr("data-type");
+    }
+
+    //选择不同类型进行搜索
+    $(".type").on("click",  function () {
+        $(".type").removeClass("active");
+        $(this).addClass("active");
+        //slideUp 滑动上升
+        $(".dropdown-menu").slideUp();
+    });
+
+    //搜索建议Ajax, 只要当前input中的值发生变化就会触发
+    $("input").on("input propertychange", function () {
+
+        if ($(this).val() != ""){
+            var results = "";
+            $.get("{% url 'suggest' %}", {key: $(this).val(), "type":$(".type.active").attr("data-type")}, function (msg) {
+                for (var i=0; i<msg.length; i++){
+                    results += '<li><a href="'+search_url+'?key='+msg[i]+'&type='+$(".type.active").attr("data-type")+'">'+msg[i]+'</a></li>'
+                }
+                $(".dropdown-menu").empty();
+                $(".dropdown-menu").append(results);
+                if (msg.length == 0){
+                    $(".dropdown-menu").slideUp();
+                }else {
+                    $(".dropdown-menu").slideDown();
+                }
+            });
+        }
+    });
+    //监测input的输入为空时，隐藏下拉菜单
+    $("#search").on("input propertychange", function () {
+        if($("#search").val() == ""){
+            $(".dropdown-menu").slideUp();
+        }
+    });
+
+    //使用js实现分页
+    $(".pagination").pagination({{ total_nums }}, {
+        current_page:{{ page }}-1, //当前页码
+        items_per_page: 6,
+        display_msg: true,
+        callback: pageselectCallback
+    });
+
+    function pageselectCallback(page_id, jq) {
+        location.href = "{% url 'result' %}?key="+'{{ key_word }}'+"&type="+'{{ search_type }}'+"&page="+(page_id+1)
+    }
+
+    //存储搜索历史，对历史记录去重
+    var doubanArr ;
+    var csdnArr;
+    if (localStorage.search_douban){
+        doubanArr = localStorage.search_douban.split(",")
+    }else {
+        doubanArr = []
+    }
+    if(localStorage.search_csdn){
+        csdnArr = localStorage.search_csdn.split(",")
+    }else {
+        csdnArr = []
+    }
+
+    //对搜索关键字去重
+    if ('{{ key_word }}'!=""){
+       test_remove('{{ key_word }}');
+       //将去重后的数组存储到浏览器的localStorage，存储的是字符串类型
+        localStorage.search_douban = doubanArr;
+        localStorage.search_csdn = csdnArr;
+    }
+    //搜索历史的显示
+    MapSearchArr();
+    function MapSearchArr() {
+        var tmpHtml = "";
+        var doubanLen = 0;
+        var csdnLen = 0;
+        if (doubanArr.length > 3) {
+            doubanLen = 3
+        } else {
+            doubanLen = doubanArr.length
+        }
+        if (csdnArr.length > 3) {
+            csdnLen = 3
+        } else {
+            csdnLen = csdnArr.length
+        }
+        for (var i = 0; i < doubanLen; i++) {
+            tmpHtml += '<li class="list-group-item li_style"><a href="/result?key=' + doubanArr[i] + '&type=douban">' + doubanArr[i] + '</a></li>'
+        }
+        for (var j = 0; j < csdnLen; j++) {
+            tmpHtml += '<li class="list-group-item li_style"><a href="/result?key=' + csdnArr[j] + '&type=CSDN">' + csdnArr[j] + '</a></li>'
+        }
+        $(".history").append(tmpHtml);
+    }
+
+    function test_remove(key){
+        //判断当前搜索的是那个网站，然后将搜索记录加入到对应的键中
+        if('{{ search_type }}' == "douban"){
+            for (var i=0;i<doubanArr.length;i++){
+                if (doubanArr[i]==key){
+                    doubanArr.splice(i, 1);
+                    break;
+                }
+            }
+            doubanArr.unshift(key)
+        }else if('{{ search_type }}' == "CSDN"){
+            for (var j=0;j<csdnArr.length;j++){
+                if (csdnArr[j]==key){
+                    csdnArr.splice(j, 1);
+                    break;
+                }
+            }
+            csdnArr.unshift(key)
+        }
+    }
+
+    //替换输入框的值
+    function append_to(top) {
+        $("#search").attr("value", top)
+    }
+</script>
+</html>
